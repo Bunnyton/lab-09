@@ -21,9 +21,10 @@ HunterGate(
 )
 
 project(lab-09 VERSION 0.1.0)
-#string(APPEND CMAKE_CXX_FLAGS " -pedantic -Werror -Wall -Wextra ")
+#string(APPEND CMAKE_CXX_FLAGS " -pedantic -Werror -Wall -Wextra")
 #string(APPEND CMAKE_CXX_FLAGS " -Wno-unused-command-line-argument")
 #string(APPEND CMAKE_CXX_FLAGS " -Wshadow -Wnon-virtual-dtor")
+#string(APPEND CMAKE_CXX_FLAGS " -lssl -lcrypto")
 
 # new versions of cmake contain gtest search files
 # commented out to increase the build speed.
@@ -40,9 +41,13 @@ find_package(Beast CONFIG REQUIRED)
 hunter_add_package(gumbo COMPONENTS)
 find_package(gumbo CONFIG REQUIRED)
 
+hunter_add_package(OpenSSL)
+find_package(OpenSSL REQUIRED)
+
+
 add_library(${PROJECT_NAME} STATIC
   # enum your files and delete this comment
-        demo/main.cpp sources/parse.cpp include/parse.hpp)
+        demo/main.cpp sources/parse.cpp include/parse.hpp sources/https_client.cpp include/https_client.hpp include/root_certificates.hpp)
 
 add_executable(demo
   ${CMAKE_CURRENT_SOURCE_DIR}/demo/main.cpp
@@ -61,6 +66,8 @@ target_link_libraries(${PROJECT_NAME} Boost::thread
     Boost::program_options
     Beast::Beast
     gumbo::gumbo
+    OpenSSL::SSL
+    OpenSSL::Crypto
 )
 
 #target_link_libraries(${PROJECT_NAME} PUBLIC nlohmann_json::nlohmann_json)

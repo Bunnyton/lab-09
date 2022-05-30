@@ -20,7 +20,7 @@
 void
 fail(beast::error_code ec, char const* what)
 {
-    std::cerr << what << ": " << ec.message() << "\n";
+    //std::cerr << what << ": " << ec.message() << "\n";
 }
 
 
@@ -127,18 +127,19 @@ fail(beast::error_code ec, char const* what)
         // Write the message to standard out
         if (res_.result_int() == _OK) { // if OK
 
-          auto path = static_cast<std::string>(req_.target());
-          auto file =  path.substr(path.find("//") + 2);
-          file = file.substr(path.find('/'));
+          auto file = static_cast<std::string>(req_.target());
           for(auto &i : file)
             if (i == '/') i = '|';
 
-          //          if (!std::filesystem::exists(file)) { //FIXME
-            std::ofstream ofs{DIR + "/" + file};
+            std::string helper = "/" + file;
+            helper = DIR + helper;
+
+            std::ofstream ofs{helper};
             ofs << res_.body();
             ofs.close();
-//          }
-        }
+        } else
+          return fail (ec, "server connection error (bad request...)");
+
 
         // Set a timeout on the operation
         beast::get_lowest_layer(stream_).expires_after(std::chrono::seconds(30));

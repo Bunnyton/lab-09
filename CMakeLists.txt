@@ -47,7 +47,7 @@ find_package(OpenSSL REQUIRED)
 
 add_library(${PROJECT_NAME} STATIC
   # enum your files and delete this comment
-        demo/main.cpp sources/parse.cpp include/parse.hpp sources/https_client.cpp include/https_client.hpp include/root_certificates.hpp include/ThreadPool.h sources/download.cpp include/download.h include/Handler.cpp include/Handler.hpp)
+        demo/main.cpp sources/https_client.cpp include/https_client.hpp include/root_certificates.hpp include/ThreadPool.h sources/Handler.cpp include/Handler.hpp)
 
 add_executable(demo
   ${CMAKE_CURRENT_SOURCE_DIR}/demo/main.cpp

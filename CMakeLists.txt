@@ -32,8 +32,8 @@ hunter_add_package(GTest)
 find_package(GTest CONFIG REQUIRED)
 
 set(Boost_NO_BOOST_CMAKE ON)
-hunter_add_package(Boost COMPONENTS system thread program_options)
-find_package(Boost CONFIG REQUIRED system thread program_options)
+hunter_add_package(Boost COMPONENTS system filesystem thread program_options)
+find_package(Boost CONFIG REQUIRED system filesystem thread program_options)
 
 hunter_add_package(Beast COMPONENTS)
 find_package(Beast CONFIG REQUIRED)
@@ -47,7 +47,7 @@ find_package(OpenSSL REQUIRED)
 
 add_library(${PROJECT_NAME} STATIC
   # enum your files and delete this comment
-        demo/main.cpp sources/parse.cpp include/parse.hpp sources/https_client.cpp include/https_client.hpp include/root_certificates.hpp)
+        demo/main.cpp sources/parse.cpp include/parse.hpp sources/https_client.cpp include/https_client.hpp include/root_certificates.hpp include/ThreadPool.h sources/download.cpp include/download.h include/Handler.cpp include/Handler.hpp)
 
 add_executable(demo
   ${CMAKE_CURRENT_SOURCE_DIR}/demo/main.cpp
@@ -62,6 +62,7 @@ target_link_libraries(demo ${PROJECT_NAME})
 
 target_link_libraries(${PROJECT_NAME} Boost::thread
     Boost::system
+    Boost::filesystem
     Boost::boost
     Boost::program_options
     Beast::Beast

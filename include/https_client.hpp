@@ -11,8 +11,13 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <fstream>
 
 #include "root_certificates.hpp"
+
+#define _OK 200
+#define DIR "html"
+#define PORT "443"
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -38,7 +43,6 @@ class session : public std::enable_shared_from_this<session>
   // Start the asynchronous operation
   void run(
       char const* host,
-      char const* port,
       char const* target,
       int version);
 

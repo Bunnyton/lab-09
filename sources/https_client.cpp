@@ -1,5 +1,5 @@
-#include <fstream>
 #include "https_client.hpp"
+
 
 //
 // Copyright (c) 2016-2019 Vinnie Falco (vinnie dot falco at gmail dot com)
@@ -27,7 +27,6 @@ fail(beast::error_code ec, char const* what)
     // Start the asynchronous operation
     void session::run(
         char const* host,
-        char const* port,
         char const* target,
         int version)
     {
@@ -49,7 +48,7 @@ fail(beast::error_code ec, char const* what)
         // Look up the domain name
         resolver_.async_resolve(
             host,
-            port,
+            PORT,
             beast::bind_front_handler(
                 &session::on_resolve,
                 shared_from_this()));
@@ -79,8 +78,7 @@ fail(beast::error_code ec, char const* what)
             return fail(ec, "connect");
 
         // Perform the SSL handshake
-        stream_.async_handshake(
-            ssl::stream_base::client,
+        stream_.async_handshake( ssl::stream_base::client,
             beast::bind_front_handler(
                 &session::on_handshake,
                 shared_from_this()));
@@ -127,12 +125,20 @@ fail(beast::error_code ec, char const* what)
             return fail(ec, "read");
 
         // Write the message to standard out
-        std::ofstream ofs{static_cast<std::string>(req_.target())};
-        if (!ofs.is_open())
-          ofs << res_;
-        ofs.close();
+        if (res_.result_int() == _OK) { // if OK
 
-        std::cout << res_ << std::endl;
+          auto path = static_cast<std::string>(req_.target());
+          auto file =  path.substr(path.find("//") + 2);
+          file = file.substr(path.find('/'));
+          for(auto &i : file)
+            if (i == '/') i = '|';
+
+          //          if (!std::filesystem::exists(file)) { //FIXME
+            std::ofstream ofs{DIR + "/" + file};
+            ofs << res_.body();
+            ofs.close();
+//          }
+        }
 
         // Set a timeout on the operation
         beast::get_lowest_layer(stream_).expires_after(std::chrono::seconds(30));

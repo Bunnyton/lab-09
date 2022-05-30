@@ -2,10 +2,15 @@
 #include <shared_mutex>
 #include <vector>
 #include <future>
+#include <filesystem>
+#include <boost/filesystem.hpp>
 
+#include "ThreadPool.h"
 #include "parse.hpp"
 #include "https_client.hpp"
+#include "download.h"
 
+#define DIR "html"
 
 //struct Body{
 //  std::string link;
@@ -51,10 +56,6 @@
 //
 //};
 
-bool thread_ready(std::future<void> &fut) {
-  if (fut.wait_for(std::chrono::seconds(0)) == std::future_status::ready)
-    return true;
-  return false;
 }
 
 template <typename T>
@@ -85,85 +86,75 @@ bool is_running(std::vector<std::future<void>> vfuts) {
   return true;
 }
 
-//int main() {
-//  auto start_link = "link.saldfsalj";
-////  Queue queue(start_link);
-//
-////  auto dfuts = make_ready_future<void>(12);
-////  auto pfuts = make_ready_future<void>(15);
-//
-////  for(;;){
-////    if (not (is_running(pfuts) and queue.is_have_task()))
-////      break;
-////
-////    for ( auto &item : pfuts) {
-////      if (thread_ready(item))
-////        t qg = queue.get;
-////        if (qg)
-////          item = std::async(std::launch::async, method, qg....);
-////    }
-////    for ( auto &item : dfuts) {
-////      if (thread_ready(item))
-////        t qg = queue.get;
-////      if (qg)
-////        item = std::async(std::launch::async, method, qg....);
-////    }
-////  }
-//  auto filename = "pse.html";
-//  try {
-//    parse(filename);
-//  } catch (std::exception &ec) {
-//    std::cout << ec.what() << std::endl;
-//    exit(EXIT_FAILURE);
-//  }
-//}
 
-int main(int argc, char** argv)
+int main()
 {
-    // Check command line arguments.
-//    if(argc != 4 && argc != 5)
-//    {
-//        std::cerr <<
-//            "Usage: http-client-async-ssl <host> <port> <target> [<HTTP version: 1.0 or 1.1(default)>]\n" <<
-//            "Example:\n" <<
-//            "    http-client-async-ssl www.example.com 443 /\n" <<
-//            "    http-client-async-ssl www.example.com 443 / 1.0\n";
-//        return EXIT_FAILURE;
-//    }
-//    auto const host = argv[1];
-//    auto const port = argv[2];
-//    auto const target = argv[3];
 //    int version = argc == 5 && !std::strcmp("1.0", argv[4]) ? 10 : 11;
+  // The SSL context is required, and holds certificates
+  ssl::context ctx{ssl::context::sslv23_client};
+
+  // This holds the root certificate used for verification
+  load_root_certificates(ctx);
+
+  // Verify the remote server's certificate
+  ctx.set_verify_mode(ssl::verify_peer);
+
+  boost::filesystem::path dir(DIR);
+  boost::filesystem::create_directory(dir);
 
 
-    auto const host = "www.boost.org";
-    auto const port = "443";
-    auto const target = "/doc/libs/1_76_0/libs/beast/example/http/client/sync-ssl/http_client_sync_ssl.cpp";
-    auto const version = 11;
+    ThreadPool dpool{1};
+    ThreadPool ppool(4);
 
-    // The io_context is required for all I/O
-    net::io_context ioc;
+    std::vector<std::future<void>> futs;
 
-    // The SSL context is required, and holds certificates
-    ssl::context ctx{ssl::context::sslv23_client};
 
-    // This holds the root certificate used for verification
-    load_root_certificates(ctx);
+    std::string str{"https://www.boost.org/doc/libs/develop/libs/beast/example/http/client/crawl/http_crawl.cpp"};
 
-    // Verify the remote server's certificate
-    ctx.set_verify_mode(ssl::verify_peer);
 
-    // Launch the asynchronous operation
-    // The session is constructed with a strand to
-    // ensure that handlers do not execute concurrently.
-    std::make_shared<session>(
-        net::make_strand(ioc),
-        ctx
-        )->run(host, port, target, version);
+
+    futs.emplace_back(dpool.enqueue(downloader, ctx, str, futs
+                                                ,dpool , ppool));
+    for(;;) {
+      break;
+    }
+
 
     // Run the I/O service. The call will return when
     // the get operation is complete.
-    ioc.run();
+    //auto start_link = "link.saldfsalj";
+    //  Queue queue(start_link);
+
+    //  auto futs = make_ready_future<void>(12);
+    //  auto pfuts = make_ready_future<void>(15);
+
+    //  for(;;){
+    //    if (not (is_running(pfuts) and queue.is_have_task()))
+    //      break;
+    //
+    //    for ( auto &item : pfuts) {
+    //      if (thread_ready(item))
+    //        t qg = queue.get;
+    //        if (qg)
+    //          item = std::async(std::launch::async, method, qg....);
+    //    }
+    //    for ( auto &item : futs) {
+    //      if (thread_ready(item))
+    //        t qg = queue.get;
+    //      if (qg)
+    //        item = std::async(std::launch::async, method, qg....);
+    //    }
+    //  }
+//    sleep(5);
+//    auto filename = "http_client_sync_ssl.cpp";
+//    try {
+//      for (auto &i : target) if (i == '/') i = '|';
+//
+//      parse("/" + target + DIR);
+//    } catch (std::exception &ec) {
+//      std::cout << ec.what() << std::endl;
+//      exit(EXIT_FAILURE);
+//    }
 
     return EXIT_SUCCESS;
 }

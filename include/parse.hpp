@@ -4,6 +4,10 @@
 #include <gumbo.h>
 #include <fstream>
 #include <iostream>
+#include <future>
+
+#include "ThreadPool.h"
+#include "download.h"
 
 void parse(const std::string &filename);
 

@@ -16,7 +16,7 @@
 
   void start(CmdArgs *data);
 
-  bool is_threads_end(CmdArgs *data);
+  bool not_tasks(CmdArgs *data);
 
 
   static void save(std::string str, CmdArgs *data, std::string host);

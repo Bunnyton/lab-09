@@ -28,7 +28,7 @@ int main(int ac, char *av[])
 
   try {
     for (;;) {
-      if (is_threads_end(data))
+      if (not_tasks(data))
         break;
       else
         std::this_thread::sleep_for(std::chrono::seconds(1));

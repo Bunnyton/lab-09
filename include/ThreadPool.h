@@ -18,6 +18,10 @@
   auto enqueue(F&& f, Args&&... args)
       -> std::future<typename std::result_of<F(Args...)>::type>;
   ~ThreadPool();
+  bool tasks_empty() {
+    std::unique_lock<std::mutex> lock(queue_mutex);
+    return tasks.empty();
+  }
  private:
   // need to keep track of threads so we can join them
   std::vector< std::thread > workers;

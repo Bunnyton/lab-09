@@ -11,10 +11,9 @@ bool thread_ready(std::future<void> &fut) {
   return false;
 }
 
-bool is_threads_end(CmdArgs *data) {
-  for(auto &i : *data->futs)
-    if (!thread_ready(i)) return false;
-  return true;
+bool not_tasks(CmdArgs *data) {
+  return data->dpool->tasks_empty() && data->ppool->tasks_empty()
+                                    && data->fpool->tasks_empty();
 }
 
 void to_full_link(std::string &link, const std::string &host){

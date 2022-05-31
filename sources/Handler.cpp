@@ -1,7 +1,8 @@
 #include "Handler.hpp"
 
-void start(std::string &req, thread_data &data, unsigned count) {
-  data.futs.emplace_back(data.dpool.enqueue(downloader, req, data, count));
+void start(CmdArgs *data) {
+  data->futs->emplace_back(data->dpool->enqueue(downloader,
+                                              *data->sp, data, data->depth));
 }
 
 bool thread_ready(std::future<void> &fut) {
@@ -10,8 +11,8 @@ bool thread_ready(std::future<void> &fut) {
   return false;
 }
 
-bool is_threads_end(thread_data &data) {
-  for(auto &i : data.futs)
+bool is_threads_end(CmdArgs *data) {
+  for(auto &i : *data->futs)
     if (!thread_ready(i)) return false;
   return true;
 }
@@ -21,15 +22,15 @@ void to_full_link(std::string &link, const std::string &host){
     link = "https://" + host + link;
 }
 
-void save(std::string *str, thread_data &data) {
-    std::ofstream stream(data.path, std::ios::app);
-    if (!stream) throw std::logic_error("File " + data.path + " not found\n");
-    stream << *str << std::endl;
+void save(std::string str, CmdArgs *data, std::string host) {
+    to_full_link(str, host);
+    std::ofstream stream(*data->path, std::ios::app);
+    if (!stream) throw std::logic_error("File " + *data->path + " not found\n");
+    stream << str << std::endl;
     stream.close();
-    delete str;
 }
 
-void picture_search(GumboNode* node, thread_data &data, unsigned count, const std::string &host) {
+void picture_search(GumboNode* node, CmdArgs *data, unsigned count, const std::string &host) {
   if (node->type != GUMBO_NODE_ELEMENT)
     return;
 
@@ -37,15 +38,14 @@ void picture_search(GumboNode* node, thread_data &data, unsigned count, const st
   if (node->v.element.tag == GUMBO_TAG_IMG &&
       (atr = gumbo_get_attribute(&node->v.element.attributes, "src")))
   {
-    auto* ans = new std::string(atr->value);
-    data.futs.emplace_back(data.fpool.enqueue(save, ans, data));
+    data->futs->emplace_back(data->fpool->enqueue(save, atr->value, data, host));
   }
   else if (count > 0 && node->v.element.tag == GUMBO_TAG_A &&
            (atr = gumbo_get_attribute(&node->v.element.attributes, "href")))
   {
     std::string req = atr->value;
     to_full_link(req, host);
-    data.futs.emplace_back(data.dpool.enqueue(downloader, req, data, count - 1));
+    data->futs->emplace_back(data->dpool->enqueue(downloader, req, data, count - 1));
   }
 
   GumboVector* children = &node->v.element.children;
@@ -54,7 +54,7 @@ void picture_search(GumboNode* node, thread_data &data, unsigned count, const st
 }
 
 
-void parse(const std::string &path, thread_data &data, unsigned count, const std::string &host) {
+void parse(const std::string &path, CmdArgs *data, unsigned count, const std::string &host) {
 
   //std::string path = "/" + filename;
   //path = DIR + path;
@@ -76,7 +76,7 @@ void parse(const std::string &path, thread_data &data, unsigned count, const std
   gumbo_destroy_output(&kGumboDefaultOptions, output);
 }
 
-void downloader(std::string &req, thread_data &data, unsigned count) {
+void downloader(std::string &req, CmdArgs *data, unsigned count) {
   std::string host = req.substr(req.find("//") + 2);
   host = host.erase(host.find('/'));
   std::string target = req.substr(req.find("//") + 2);
@@ -84,7 +84,7 @@ void downloader(std::string &req, thread_data &data, unsigned count) {
   download(host, target, data, count);
 }
 
-void download (const std::string &s_host , std::string &s_target, thread_data &data, unsigned count) {
+void download (const std::string &s_host , std::string &s_target, CmdArgs *data, unsigned count) {
   auto const host = s_host.c_str();
   auto const target = s_target.c_str();
   auto const version = 11;
@@ -107,8 +107,8 @@ void download (const std::string &s_host , std::string &s_target, thread_data &d
   // ensure that handlers do not execute concurrently.
   std::make_shared<session>(
       net::make_strand(ioc),
-      data.ctx )->run(host, target, version);
+      data->ctx )->run(host, target, version);
   ioc.run();
-  data.futs.emplace_back(data.ppool.enqueue(parse, change_target, data
+  data->futs->emplace_back(data->ppool->enqueue(parse, change_target, data
                                                         , count, s_host));
 }

@@ -1,6 +1,5 @@
 #include "Handler.hpp"
 
-std::shared_mutex mutex;
 void start(std::string &req, thread_data &data, unsigned count) {
   data.futs.emplace_back(data.dpool.enqueue(downloader, req, data, count));
 }
@@ -22,6 +21,14 @@ void to_full_link(std::string &link, const std::string &host){
     link = "https://" + host + link;
 }
 
+void save(std::string *str, thread_data &data) {
+    std::ofstream stream(data.path, std::ios::app);
+    if (!stream) throw std::logic_error("File " + data.path + " not found\n");
+    stream << *str << std::endl;
+    stream.close();
+    delete str;
+}
+
 void picture_search(GumboNode* node, thread_data &data, unsigned count, const std::string &host) {
   if (node->type != GUMBO_NODE_ELEMENT)
     return;
@@ -30,16 +37,8 @@ void picture_search(GumboNode* node, thread_data &data, unsigned count, const st
   if (node->v.element.tag == GUMBO_TAG_IMG &&
       (atr = gumbo_get_attribute(&node->v.element.attributes, "src")))
   {
-    std::unique_lock lock(mutex);
-//    lock.lock();
-
-    std::string ans = atr->value;
-
-    std::ofstream stream(data.path, std::ios::app);
-    if (!stream) throw std::logic_error("File " + data.path + " not found\n");
-      stream << ans << std::endl;
-      stream.close();
-    lock.unlock();
+    auto* ans = new std::string(atr->value);
+    data.futs.emplace_back(data.fpool.enqueue(save, ans, data));
   }
   else if (count > 0 && node->v.element.tag == GUMBO_TAG_A &&
            (atr = gumbo_get_attribute(&node->v.element.attributes, "href")))

@@ -61,10 +61,11 @@ int main(int ac, char *av[])
 
   ThreadPool dpool(dthread_amount);
   ThreadPool ppool(pthread_amount);
+  ThreadPool fpool(1);
 
   std::vector<std::future<void>> futs;
 
-  thread_data data(ctx, futs, dpool, ppool, output);
+  thread_data data(ctx, futs, dpool, ppool, fpool, output);
 
   start(start_page, data, depth);
 
